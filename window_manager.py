@@ -3,14 +3,29 @@ from toga.style.pack import LEFT, RIGHT, TOP, ROW, Pack, BOTTOM, COLUMN, CENTER
 
 class Window_Manager():
     def __init__(self,_self):
+        self.server = _self.server
         self.cursor = _self.server.cursor
-        self.table = _self.table
+        self.connection = _self.server.connection
+
+        self.main_window = _self.main_window
+
+        self.user_table = _self.user_table
+        self.complaint_table = _self.complaint_table
+        self.complainer_table = _self.complainer_table
+
         self.set_user_table = _self.set_user_table
         self.set_complaint_table = _self.set_complaint_table
-        self.set_complaier_table = _self.set_complainer_table
+        self.set_complainer_table = _self.set_complainer_table
+
         self.modify_user = _self.modify_user
+        self.modify_complaint = _self.modify_complaint
+        self.modify_complainer = _self.modify_complainer
+
         self.delete_user = _self.delete_user
+        self.delete_complaint = _self.delete_complaint
+        self.delete_complainer = _self.delete_complainer
         pass
+
 
     def add_user_window(self):
         window = toga.Window(f"Add New User",size=(300,300))
@@ -59,7 +74,7 @@ class Window_Manager():
             self.set_user_table()
 
             btn.window.close()
-            # self.connection.commit()
+            self.connection.commit()
 
         save_btn = toga.Button("Save",on_press=_add)
         content_box.add(user_box,pass_box,name_box,phone_box,type_box,save_btn)
@@ -68,28 +83,123 @@ class Window_Manager():
         # self.windows.add(window)
         # window.show()
 
-
-    def add_complaint_window(self,cursor,set_complaint_table):
+    def add_complaint_window(self):
         print("Please Impliment Complaint window!!!")
+        window = toga.Window(f"Add New Complaint",size=(500,400))
+        content_box = toga.Box(style=Pack(direction=COLUMN,flex=1))
+
+        # title,detail,proof_imgfile
+        title_box = toga.Box(children=[toga.Label("Title ",style=Pack(padding=10))])
+        title = toga.TextInput(placeholder="e.g. Problem/Reason",style=Pack(padding=10,width=200))
+        title_box.add(title)
+
+        detail_box = toga.Box(children=[toga.Label("Detail ",style=Pack(flex=1,padding=10))])
+        detail = toga.MultilineTextInput(placeholder="e.g. the complainer said...",style=Pack(flex=6,padding=(0,0,10,0)))
+        detail_box.add(detail)
+
+        # proof_img_file --> choose_file_dialog
+        proof_box = toga.Box()
+        file = toga.Label("Proof img file ",style=Pack(padding=20))
+        
+        async def _choose(btn):
+            text = await window.open_file_dialog("Choose img")
+            file.text = text
+
+        proof_img_file = toga.Button("choose",on_press=_choose,style=Pack(padding=10))
+        proof_box.add(file,proof_img_file)
+
+        # is_approved_by_admin,complainer_id
+        is_approved_by_admin = toga.Switch("Is Approved By Admin")
+
+        complainer_box = toga.Box(children=[toga.Label("Complainer ID",style=Pack(padding=20))])
+        complainer_id = toga.NumberInput(min_value=1)
+        complainer_box.add(complainer_id)
+
+        def _add(btn):
+            if(not title.value):
+                window.info_dialog("Error","Please Enter a Title")
+                return
+
+            cmd = f'''INSERT INTO COMPLAINT_REGISTER(
+                        Complaint_title,
+                        Complaint_detail,
+                        Proof_img_file,
+                        Complainer_id_fk,
+                        Is_approved_by_admin,
+                        Complaint_date,
+                        Complaint_time,
+                        Complaint_timestamp) value (
+                        "{title.value}",
+                        "{detail.value}",
+                        "{file.text}",
+                        "{complainer_id.value}",
+                        "{is_approved_by_admin.value}",
+                        curdate(),curtime(),current_timestamp()
+                        ); '''
+            self.cursor.execute(cmd)
+            self.set_complaint_table()
+
+            btn.window.close()
+            # self.connection.commit()
+        save_btn = toga.Button("Save",on_press=_add)
+        content_box.add(title_box,detail_box,proof_box,is_approved_by_admin,complainer_id,complainer_box,save_btn)
+        window.content = content_box
+        return window
+
         pass
 
-    def add_complainer_window(self,cursor,set_complainer_table):
+    def add_complainer_window(self):
         print("Please Impliment Complainer window!!!")
+        window = toga.Window(f"Add New Complainer",size=(300,300))
+        content_box = toga.Box(style=Pack(direction=COLUMN,flex=1))
+
+        name_box = toga.Box(children=[toga.Label("Name ",style=Pack(padding=20))])
+        name = toga.TextInput(placeholder="e.g. Tiwari",style=Pack(padding=10,width=200))
+        name_box.add(name)
+
+        email_box = toga.Box(children=[toga.Label("Email ",style=Pack(padding=20))])
+        email = toga.TextInput(placeholder="e.g. Tiwari@cooking.com",style=Pack(padding=10,width=200))
+        email_box.add(email)
+
+        def _add(btn):
+            if(not name.value):
+                window.info_dialog("Error","Please Enter a Unique Username")
+                return
+
+            cmd = f'''INSERT INTO COMPLAINER_REGISTRATION(Name,
+                        Email,
+                        Registration_date,
+                        Registration_time,
+                        Registration_timestamp) value
+                        ("{name.value}","{email.value}",
+                        curdate(),curtime(),current_timestamp());
+                    '''
+            self.cursor.execute(cmd)
+            self.set_complainer_table()
+
+            btn.window.close()
+            self.connection.commit()
+
+        save_btn = toga.Button("Save",on_press=_add)
+        content_box.add(name_box,email_box,save_btn)
+        window.content = content_box
+        return window
         pass
+
 
     def user_details_window(self):
-        # if(not table.selection):
-        #     return
         detail_window = toga.Window("User Details",size=(320,240))
 
         detail_box = toga.Box(style=Pack(direction=COLUMN,padding=20))
-        print(self.table,"in wm")
 
-        user_label = toga.Label("Username : "+self.table.selection.Username)
-        pass_label = toga.Label("Password : "+self.table.selection.Password)
-        name_label = toga.Label("Name     : "+self.table.selection.Name)
-        phone_label = toga.Label("Phone   : "+self.table.selection.Phone)
-        type_label = toga.Label("Type     : "+self.table.selection.Type)
+        data = self.server.user_data(f'Select * from USERS where Username="{self.user_table.selection.Username}"')
+
+        user_label = toga.Label("Username : "+data[0][0])
+        pass_label = toga.Label("Password : "+data[0][1])
+        name_label = toga.Label("Name     : "+data[0][2])
+        phone_label = toga.Label("Phone   : "+data[0][3])
+        type_label = toga.Label("Type     : "+data[0][4])
+
         detail_box.add(user_label)
         detail_box.add(pass_label)
         detail_box.add(name_label)
@@ -102,17 +212,58 @@ class Window_Manager():
         detail_window.content = detail_box
         return detail_window
 
-        # self.windows.add(detail_window)
-        # detail_window.show()
+    def complaint_details_window(self):
+        detail_window = toga.Window("Complaint Details",size=(320,240))
 
-    def complaint_details_window(self,table,modify_complaint,delete_complaint):
-        print("Please Impliment Complaint detail window!!!")
+        detail_box = toga.Box(style=Pack(direction=COLUMN,padding=20))
 
-    def complainer_details_window(self,table,modify_complainer,delete_complainer):
-        print("Please Impliment Complainer detail window!!!")
+        data = self.server.complaint_data(f'Select * from COMPLAINT_REGISTER where Complaint_id="{self.complaint_table.selection.ID}"')
 
-    def modify_user_window(self,data):
-        # data = [i.text.split(":")[1].strip() for i in widgets.parent.children[:5]]
+        id_label = toga.Label("Complaint ID : "+data[0][0])
+        title_label = toga.Label("Title : "+data[0][1])
+        detail_label = toga.Label("Detail : "+data[0][2])
+        image_label = toga.Label("Proof Image File : "+data[0][3])
+        complainer_label = toga.Label("Complainer   : "+data[0][4])
+        admin_approval_label = toga.Label("Admin Approval     : "+data[0][5])
+        date_label = toga.Label("Complaint Date     : "+data[0][6])
+        time_label = toga.Label("Complaint Time     : "+data[0][7])
+        timestamp_label = toga.Label("Complaint Timestamp     : "+data[0][8])
+
+        detail_box.add(id_label,title_label,detail_label,image_label,complainer_label,
+                        admin_approval_label,date_label,time_label,timestamp_label)
+
+        detail_box.add(toga.Button("Modify",on_press=self.modify_complaint))
+        detail_box.add(toga.Button("Delete",on_press=self.delete_complaint))
+
+        detail_window.content = detail_box
+        return detail_window
+
+    def complainer_details_window(self):
+        # print("Please Impliment Complainer detail window!!!")
+        detail_window = toga.Window("Complainer Details",size=(400,240))
+
+        detail_box = toga.Box(style=Pack(direction=COLUMN,padding=20))
+
+        data = self.server.complainer_data(f'Select * from COMPLAINER_REGISTRATION where Complainer_id="{self.complainer_table.selection.ID}"')
+
+        id_label = toga.Label("Complainer ID : "+data[0][0])
+        name_label = toga.Label("Name : "+data[0][1])
+        email_label = toga.Label("Email : "+data[0][2])
+        date_label = toga.Label("Registration Date     : "+data[0][3])
+        time_label = toga.Label("Registration Time     : "+data[0][4])
+        timestamp_label = toga.Label("Registration Timestamp     : "+data[0][5])
+
+        detail_box.add(id_label,name_label,email_label,date_label,time_label,timestamp_label)
+
+        detail_box.add(toga.Button("Modify",on_press=self.modify_complainer))
+        detail_box.add(toga.Button("Delete",on_press=self.delete_complainer))
+
+        detail_window.content = detail_box
+        return detail_window
+
+
+    def modify_user_window(self,username):
+        data = self.server.user_data(f'Select * from USERS where Username="{username}"')
         # print(data)
         window = toga.Window(f"Modify User {data[0]}",size=(300,300))
         content_box = toga.Box(style=Pack(direction=COLUMN,flex=1))
@@ -177,8 +328,114 @@ class Window_Manager():
         # widgets.window.close()
         pass
 
-    def modify_complaint_window(self,data,cursor,set_complaint_table):
-        print("Please Impliment modify_complaint_window!!!")
+    def modify_complaint_window(self,data):
+        # print("Please Impliment modify_complaint_window!!!")
+        data = self.server.complaint_data(f'select * from COMPLAINT_REGISTER where Complaint_id="{data}"')[0]
+        print(data)
+        window = toga.Window(f"Modify Complaint {data[0]}",size=(500,400))
+        content_box = toga.Box(style=Pack(direction=COLUMN,flex=1))
 
-    def modify_complainer_window(self,data,cursor,set_complainer_table):
+        # NEW Title
+        title_box = toga.Box(children=[toga.Label("Title ",style=Pack(padding=20))])
+        title = toga.TextInput(placeholder="New Title",style=Pack(padding=10,width=200))
+        title_box.add(title)
+        
+        # NEW Detail
+        detail_box = toga.Box(children=[toga.Label("Detail ",style=Pack(padding=20))])
+        detail = toga.MultilineTextInput(placeholder="New Detail",style=Pack(padding=10,width=400))
+        detail_box.add(detail)
+
+        proof_box = toga.Box()
+
+        file = toga.Label("Proof img file ",style=Pack(padding=20))
+        text = ""
+        async def _choose(btn):
+            try:
+                file.text = await window.open_file_dialog("Choose img")
+            except:
+                pass
+
+        proof_img_file = toga.Button("choose",on_press=_choose,style=Pack(padding=10,width=100))
+        proof_box.add(file,proof_img_file)
+
+        complainer_box = toga.Box(children=[toga.Label("Complainer ID",style=Pack(padding=20))])
+        complainer_id = toga.NumberInput(min_value=1,style=Pack(padding=10,width=100))
+        complainer_box.add(complainer_id)
+
+        is_approved_by_admin = toga.Switch("Is Approved By Admin")
+
+        def _modify(btn):
+            if(not title.value):
+                title.value = data[1]
+            if(not detail.value):
+                detail.value = data[2]
+            if(not file.text):
+                file.text = data[3]
+            if(not complainer_id.value):
+                complainer_id.value = data[4]
+            if(not is_approved_by_admin.value):
+                is_approved_by_admin.value = False if data[5]=="False" else True
+
+            cmd = f'''UPDATE COMPLAINT_REGISTER 
+                        SET Complaint_title="{title.value}", 
+                        Complaint_detail="{detail.value}",
+                        Proof_img_file="{file.text}",
+                        Complainer_id_fk="{complainer_id.value}",
+                        Is_approved_by_admin="{is_approved_by_admin.value}"
+                        WHERE Complaint_id="{data[0]}"'''
+            self.cursor.execute(cmd)
+            self.set_complaint_table()
+            # self.connection.commit()
+            # btn.window.info_dialog("Result","Operation Successful")
+            btn.window.close()
+
+        save_btn = toga.Button("Save",on_press=_modify)
+        content_box.add(title_box,detail_box,proof_box,is_approved_by_admin,complainer_box,save_btn)
+        window.content = content_box
+        
+        return window    
+        
+        # self.windows.add(window)
+        # window.show()
+        # widgets.window.close()
+        pass
+
+    def modify_complainer_window(self,data):
         print("Please Impliment modify_complainer_window!!!")
+
+        data = self.server.complainer_data(f'select * from COMPLAINER_REGISTRATION where Complainer_id="{data}"')[0]
+        window = toga.Window(f"Modify Complainer {data[0]}",size=(240,200))
+        content_box = toga.Box(style=Pack(direction=COLUMN,flex=1))
+
+        # NEW Name
+        name_box = toga.Box(children=[toga.Label("Name ",style=Pack(padding=20))])
+        name = toga.TextInput(placeholder="New Name",style=Pack(padding=10,width=200))
+        name_box.add(name)
+        
+        # NEW Email
+        email_box = toga.Box(children=[toga.Label("Email ",style=Pack(padding=20))])
+        email = toga.TextInput(placeholder="New Email",style=Pack(padding=10,width=200))
+        email_box.add(email)
+
+       
+        def _modify(btn):
+            if(not name.value):
+                name.value = data[1]
+            if(not email.value):
+                email.value = data[2]
+            
+            cmd = f'''UPDATE COMPLAINER_REGISTRATION 
+                        SET Name="{name.value}", 
+                        Email="{email.value}" 
+                        WHERE Complainer_id={data[0]}'''
+            self.cursor.execute(cmd)
+            self.set_complainer_table()
+            # self.connection.commit()
+            # btn.window.info_dialog("Result","Operation Successful")
+            btn.window.close()
+
+        save_btn = toga.Button("Save",on_press=_modify)
+        content_box.add(name_box,email_box,save_btn)
+        window.content = content_box
+        
+        return window    

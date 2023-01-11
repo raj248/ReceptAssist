@@ -11,26 +11,42 @@ class Server():
         self.connection = mydb
         self.cursor = self.connection.cursor()
 
-    def user_data(self):
-    	self.cursor.execute("select * from USERS")
+    def user_data(self,cmd=None):
+        if(not cmd):
+            cmd = "select * from USERS"
+        self.cursor.execute(cmd)
 
-    	return self.cursor.fetchall()
-
-    def complaint_data(self):
-        self.cursor.execute("select * from COMPLAINT_REGISTER")
         return self.cursor.fetchall()
+
+    def complaint_data(self,cmd=None):
+        t = None
+        if(not cmd):
+            cmd = "select * from COMPLAINT_REGISTER"
+            self.cursor.execute(cmd)
+            t =[(str(i[-1]), i[0],i[1][:25]+'...',str(i[2][:25]+'...'),str(i[3]),i[4],i[5].strftime("%d-%b-%y"),str(i[6]),i[7]) for i in self.cursor.fetchall()]
+
+        else:
+            self.cursor.execute(cmd)
+            t =[(str(i[-1]), i[0],i[1],str(i[2]),str(i[3]),i[4],i[5].strftime("%d-%b-%y"),str(i[6]),i[7]) for i in self.cursor.fetchall()]
+
+        return t
         pass
 
-    def complainer_data(self):
-        self.cursor.execute("select * from COMPLAINER_REGISTRATION")
-        return self.cursor.fetchall()
-        pass
-
-
+    def complainer_data(self,cmd=None):
+        if(not cmd):
+            cmd = "select * from COMPLAINER_REGISTRATION"
+        self.cursor.execute(cmd)
+    # [('Zedd', 'zed007281@gmail.com', datetime.date(2023, 1, 9), datetime.timedelta(seconds = 69264), '2023-01-09 19:14:24', 1), 
+    # ('bear', 'bearFF281@gmail.com', datetime.date(2023, 1, 9), datetime.timedelta(seconds = 69264), '2023-01-09 19:14:24', 2)]
+        t = [(str(i[-1]), i[0], i[1], i[2].strftime("%d-%b-%y"), str(i[3]), i[4]) for i in self.cursor.fetchall()]
+        return t
 
 # Server()
 
 
+
+# [('1', 'Server down', 'Server not responding since 2AM Friday, showing 404 Error', './images/abc.jpg', '2', 'False', '09-Jan-23', '19:14:25', '2023-01-09 19:14:25')]
+# title 1, detail 2, image 3, complainer 4, admin approval 5
 # import toga
 # from toga.style.pack import LEFT, RIGHT, TOP, ROW, Pack, BOTTOM, COLUMN, CENTER
 # def add_user_window(cursor,set_user_table):
