@@ -57,3 +57,7 @@ Create Table COMPLAINT_ALLOTMENT(
      Foreign key(User) references USERS(Username) on update cascade on delete set null,
      Foreign key(Complaint_id_fk) references COMPLAINT_REGISTER(Complaint_id) on update cascade ON DELETE SET NULL);
 insert into COMPLAINT_ALLOTMENT value ("root",1,"in_process");
+
+
+-- Given Complaint id, Select comment and the user who commented
+select Comment_text,Name from COMMENTS,USERS where USERS.Username=COMMENTS.Commenter_id and Complaint_id_fk=1

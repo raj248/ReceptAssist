@@ -20,6 +20,7 @@ class Login(toga.App):
     def startup(self):
 
         # self.Cursor()
+        self.user = {"Name":"Bell","Type":"ADMIN","UID":"root"}
 
         self.main_window = toga.MainWindow(title = "Dashboard",size=(900,550))
         self.main_box = toga.Box()
@@ -27,7 +28,7 @@ class Login(toga.App):
 
         self.add_btn = toga.Button('Add',on_press=self.add_user)
         self.detail_btn = toga.Button('Details',on_press=self.user_details)
-        self.action_btn = toga.Button('Action',on_press=self.action2)
+        self.action_btn = toga.Button('Action',on_press=self.action)
 
         button_box.add(self.add_btn)
         button_box.add(self.detail_btn)
@@ -39,7 +40,7 @@ class Login(toga.App):
 
         user_cmd = toga.Command(self.set_user_table,"User",tooltip="Modify Users",group=group)
         record_cmd = toga.Command(self.set_complainer_table,"Complainer",tooltip="Modify Records",group=group)
-        complaint_cmd = toga.Command(self.set_complaint_table,"Complaint",tooltip="Modify Records",group=group)
+        complaint_cmd = toga.Command(self.set_complaint_table,"Complaint",tooltip="Modify Complaint",group=group)
 
         self.main_window.toolbar.add(user_cmd,record_cmd,complaint_cmd)
         self.user_table = toga.Table(USER_HEADING, accessors = USER_ACCESSORS,missing_value="None",style=Pack(flex=10),on_select=None)
@@ -50,6 +51,7 @@ class Login(toga.App):
         self.window_manager = Window_Manager(self)
 
         self.set_user_table()
+        self.comment_detail()
         self.main_window.content = self.main_box
         self.main_window.show()
 
@@ -57,6 +59,7 @@ class Login(toga.App):
     def set_user_table(self,widgets=None):
         self.add_btn.on_press = self.add_user
         self.detail_btn.on_press = self.user_details
+
 
         print('Setting User Table')
         self.main_box.remove(self.complaint_table,self.complainer_table)
@@ -85,8 +88,8 @@ class Login(toga.App):
         self.main_box.add(self.complainer_table)
 
 
-    def action2(self):
-        print('action2')
+    def action(self,btn):
+        self.main_window.info_dialog('Notice','Action Button is Pressed!')
         return
 
     def add_user(self,widgets):
@@ -165,6 +168,8 @@ class Login(toga.App):
         data = [i.text.split(":")[1].strip() for i in widgets.parent.children[:2]]
 
         def _delete(any_,result):
+            if(not result):
+                return
 
             cmd = f'DELETE From USERS WHERE Username="{data[0]}"'
             self.server.cursor.execute(cmd)
@@ -181,7 +186,8 @@ class Login(toga.App):
         data = [i.text.split(":")[1].strip() for i in widgets.parent.children[:2]]
 
         def _delete(any_,result):
-
+            if(not result):
+                return
             cmd = f'DELETE From COMPLAINT_REGISTER WHERE Complaint_id="{data[0]}"'
             self.server.cursor.execute(cmd)
             self.set_complaint_table()
@@ -194,11 +200,13 @@ class Login(toga.App):
         return
 
         pass
+        
     def delete_complainer(self,widgets):
         data = [i.text.split(":")[1].strip() for i in widgets.parent.children[:2]]
 
         def _delete(any_,result):
-
+            if(not result):
+                return
             cmd = f'DELETE From COMPLAINER_REGISTRATION WHERE Complainer_id="{data[0]}"'
             self.server.cursor.execute(cmd)
             self.set_complainer_table()
@@ -212,21 +220,33 @@ class Login(toga.App):
 
         pass
 
+    def add_comment(self,complaint_id,text):
+        cmd = f'''insert into COMMENTS(Comment_text,Complaint_id_fk,Commenter_id,Date,Time,Timestamp) value (
+                    "{text}",
+                    {complaint_id},
+                    "{self.user["UID"]}",
+                    curdate(),curtime(),current_timestamp()
+                    )'''
+        # print("impliment add comment")
+        self.server.cursor.execute(cmd)
+        self.server.connection.commit()
 
-    # def Cursor(self,username="", password="", host="localhost"):
-    #     mydb = mysql.connector.connect(
-    #       host=host,
-    #       user='root',
-    #       password='007281',
-    #       database='zenex_complaint_register'
-    #       )
-    #     self.connection = mydb
-    #     self.cursor = self.connection.cursor()
 
-    # def on_exit(self):
-    #     self.cursor.close()
-    #     self.connection.close()
-    #     print('connection closed')
+    def comment_detail(self,btn=None,complaint_id=None):
+        if(not btn and not complaint_id):
+            return
+        if(btn):
+            complaint_id = btn.parent.children[0].text.split(" ")[-1]
+            window = self.window_manager.comment_window(complaint_id)
+            self.windows.add(window)
+            window.show()
+        elif(complaint_id):
+            window = self.window_manager.comment_window(complaint_id)
+            self.windows.add(window)
+            window.show()
+
+
+
 
 
 Login("App",'support.it').main_loop()
