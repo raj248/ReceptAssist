@@ -1,3 +1,6 @@
+-- This broke the code
+-- " or ""="
+-- 105 OR 1=1
 create table USERS(
     Username varchar(20),
      Password varchar(50),
